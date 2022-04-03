@@ -1,4 +1,40 @@
+# SQL Server
+
 Created by Microsoft
+
+ALTER TABLE
+
+```sql
+--used for renaming columns
+ALTER TABLE table_name
+RENAME COLUMN old_name TO new_name
+
+--Droping a column
+ALTER TABLE table_name
+DROP COLUMN column_name
+
+--charging data types
+ALTER TABLE table_name
+ALTER COLUMN column_name
+	type VARCHAR(128)
+```
+
+CASE WHEN
+
+```sql
+SELECT 
+    SUM(CASE WHEN name = 'unnamed' THEN 1 else 0 END) AS NAME_COUNT,
+```
+
+CAST
+
+Convert a value to an int datatype
+
+```sql
+-- Calculate the net amount as amount + fee
+SELECT transaction_date, amount + CAST(fee AS integer) AS net_amount 
+FROM transactions;
+```
 
 CREATE TABLE
 
@@ -29,7 +65,11 @@ bit(1=TRUE, 0=FALSE, also NULL values)
 
 Strings
 
-char, varchar, nvarchar
+char: a fixed length string of n characters
+
+varchar: a max number of characters
+
+nvarchar
 
 DECLARE
 
@@ -163,6 +203,12 @@ RIGHT JOIN
 
 ![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
 
+NOT NULL
+
+prevents from obtaining null values
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/13ef8933-3a96-43a9-b8eb-15e6fe083f13/Untitled.png)
+
 ORDER BY
 
 ```sql
@@ -252,6 +298,22 @@ SELECT
 	TOP(5) REPLACE(column name, 'character', 'replaced character') AS new_name
 ```
 
+SUBSTRING
+
+The SUBSTRING() function extracts some characters from a string.
+
+```sql
+--Extract 3 characters from a string, starting in position 1:
+
+SELECT SUBSTRING('SQL Tutorial', 1, 3) AS ExtractString;
+
+--another example
+ALTER TABLE professors 
+ALTER COLUMN firstname 
+TYPE varchar(16)
+USING SUBSTRING (firstname FROM 1 for 16)
+```
+
 Temporary Tables
 
 using a # to create a temp table 
@@ -316,6 +378,24 @@ UNION & UNION ALL
 combining same or different tables with the same info/structure and same data types
 
 UNION - Duplicated rows are excluded
+
+UNIQUE
+
+`UNIQUE`
+ keyword after the `column_name` that should be unique. This, of course, only works for *new* tables
+
+```sql
+CREATE TABLE table_name (
+ column_name UNIQUE
+);
+```
+
+add a unique constraint to an *existing* table, you do it like that:
+
+```sql
+ALTER TABLE table_name
+ADD CONSTRAINT some_name UNIQUE(column_name);
+```
 
 UPDATE
 

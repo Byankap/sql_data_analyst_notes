@@ -1,4 +1,4 @@
-# SQL Server
+# SQL Server Syntax
 
 Created by Microsoft
 
@@ -22,8 +22,28 @@ ALTER COLUMN column_name
 CASE WHEN
 
 ```sql
+CASE 
+	WHEN boolean_expression THEN result_expression[...n]
+	[ELSE else_result_expression]
+END
+
+	CASE WHEN continent = 'Europe' or Continent = 'Asia' THEN 'Eurasia'
+		ElSE Continuent
+		END AS NewContinent --column name
+
 SELECT 
     SUM(CASE WHEN name = 'unnamed' THEN 1 else 0 END) AS NAME_COUNT,
+```
+
+Binning into groups
+
+```sql
+CASE WHEN x <30 THEN 1
+		 WHEN x >30 AND x< 40 THEN 2
+			.......
+			ELSE 5
+			END AS column_name
+
 ```
 
 CAST
@@ -71,6 +91,68 @@ varchar: a max number of characters
 
 nvarchar
 
+COALESCE
+
+returns the first non-missing value
+
+```sql
+SELECT column1, column2
+COALESCE(column1, column2, 'NA') AS new_column
+FROM ....
+--if value1 is null and value2 is not null, return value2
+--if both, returns NA
+--if both have values, it returns the first value 
+
+```
+
+CONCAT
+
+glues together two columns
+
+```sql
+-creating surrogate and primary keys
+ALTER TABLE 
+ADD COlUMN column_c VARCHAR (250)
+
+UPDATE TABLE
+SET column_c = CONCAT(column_a, column_b) --Surrogate key
+ALTER TABLE table_name
+ADD CONSTRAINT pk PRIMARY KEY (column_name)
+
+```
+
+DATEPART
+
+determine what part of date you want to calculate
+
+DD: day
+
+MM: month
+
+YY: year
+
+HH: hour
+
+```sql
+DATEADD()
+--add or subtract datetime values, always returns a date
+DATEADD(DATEPART, number, date)
+--date thats 30 days from 6/21/2020
+SELECT DATEADD(DD, 30, '2020-06-21')
+--use negative numbers to back to the past
+--Can also use columns that have dates
+	-- Return the DeliveryDate as 5 days after the ShipDate
+	SELECT OrderDate, 
+       DATEADD (DD, 5, ShipDate) AS DeliveryDate
+	FROM Shipments
+
+DATEDIFF()
+--obtain the difference bwt two datetime values, always returns a number
+DATEDIFF(datepart, startdate, endate
+SELECT DATEDIFF(DD, '2020-05-22', '2020-06-21')
+--output will. be 30
+```
+
 DECLARE
 
 creating variable to avoid repeatability 
@@ -108,6 +190,25 @@ WHERE
 TRUNCATE TABLE
 ```
 
+Derived Tables
+
+breaking down complex query into smaller steps
+
+queries treated like a temp table 
+
+contained within main query
+
+specified in the FROM clause
+
+```sql
+SELECT a.* 
+FROM kidney a
+--dervied table computes average age joined to the actual table
+JOIN(SELECT AVG(Age) AS AverageAge
+FROM kidney) b
+ON a.Age = b.AverageAge
+```
+
 FROM
 
 the source of the location of tables
@@ -116,9 +217,18 @@ GROUP BY
 
 occurs after WHERE, but a WHERE clause in not necessary
 
+CANNOT use WHERE with GROUP BY
+
 split data into groups/comb of one or more values/columns 
 
 avoids having to individual queries for filtering in WHERE, instead it will be a sum of all unique values for specific columns at once. 
+
+```sql
+--calculate the maximum value for each state
+SELECT State, MAX(DurationSeconds)
+FROM Incidents
+GROUP BY State
+```
 
 HAVING
 
@@ -147,11 +257,32 @@ FROM...
 
 tip: dont use SELECT *, be specific  in case table structure changes 
 
+ISNULL
+
+substituting missing data with specific values- can replace with only one value 
+
+```sql
+SELECT column1, column2
+ISNULL(column2, "Unknown") AS NewCountry
+FROM...
+
+--can substitute values from one column for another 
+```
+
 JOIN
 
 primary keys: uniquely identify each row
 
 Foreign keys: key found in other tables
+
+```sql
+--template
+SELECT table_a.column1, table_a.column2, table_b.column1, ... 
+FROM table_a
+JOIN table_b 
+ON table_a.column = table_b.columng
+WHERE ...
+```
 
 INNER JOIN- only returns matching rows
 
@@ -209,6 +340,14 @@ prevents from obtaining null values
 
 ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/13ef8933-3a96-43a9-b8eb-15e6fe083f13/Untitled.png)
 
+BlANK VALUES
+
+are different from null values to exclude them 
+
+```sql
+WHERE len(column_name) > 0
+```
+
 ORDER BY
 
 ```sql
@@ -216,9 +355,72 @@ ORDER BY
 ORDER BY column
 
 --Order in descending 
+--ASC is smallest to biggest (default)
+--DESC big to small 
 SELECT TOP (10) column1, column2
 FROM table
 ORDER By column2 DESC, column1;
+```
+
+ROUND
+
+either side of the decimal 
+
+ROUND(number, length [,function])
+
+```sql
+
+--right side of the decimal
+SELECT DurationSeconds,
+ROUND(DurationSeconds, 0) AS RoundToZero,
+ROUND(DurationSeconds, 1) AS RoundToOne
+FROM....
+----output
+DurationSeconds=121.6480
+RoundToZero=122.0000
+RoundToOne=121.6000
+
+--rounding on the left side
+SELECT DurationSeconds,
+ROUND(DurationSeconds, -1) AS RoundToTen,
+ROUND(DurationSeconds, -2) AS RoundToHundred
+FROM....
+----output
+DurationSeconds=121.6480
+RoundToTen=120.0000
+RoundToHundred=100.0000
+```
+
+TRUNCATE
+
+ROUND use truncate values when specifying third argument
+
+truncate      vs      round
+
+17.85→ 17           17.85→ 18
+
+```sql
+SELECT DurationSeconds,
+ROUND(DurationSeconds, 0) AS RoundToWhole,
+ROUND(DurationSeconds, 0, 1) AS Truncating
+FROM....
+----output
+DurationSeconds=15.6100
+RoundToWhole=16.000
+Truncating=15.000
+
+```
+
+MORE MATH FUNCTIONS
+
+ABS():  absolute, returns positive numeric values 
+
+SQRT(): finding the square root
+
+LOG(): returns the natural logarithm
+
+```sql
+LOG(number [,Base])
 ```
 
 SELECT
@@ -260,6 +462,10 @@ SELECT
 	COUNT(column) AS new_name (without an alias with will be a no column name)
 SELECT
 	COUNT(DISTINCT column) AS new_name (without an alias with will be a no column name)
+
+-- Count the number of distinct rows with columns make, model
+SELECT COUNT(DISTINCT(make, model)) 
+FROM cars;
 
 --min and max (column value)
 SELECT
@@ -373,6 +579,22 @@ WHERE song LIKE 'a%';
 
 ```
 
+WHILE loop
+
+```sql
+DECLARE @ctr INT
+SET @crt = 1
+WHILE @crt<10
+	BEGIN
+		SET @crt = @crt +1
+		--creating a break
+		if @crt = 4
+			BREAK
+	END
+--view result
+SELECT @crt
+```
+
 UNION & UNION ALL
 
 combining same or different tables with the same info/structure and same data types
@@ -404,6 +626,12 @@ UPDATE table
 SET column = value
 WHERE
 	--conditions
+
+--update columns of a table based on values in another table:
+UPDATE table_a
+SET column_to_update = table_b.column_to_update_from
+FROM table_b
+WHERE condition1 AND condition2 AND ...;
 
 ```
 

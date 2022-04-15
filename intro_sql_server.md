@@ -105,6 +105,34 @@ FROM ....
 
 ```
 
+Common Table Expressions
+
+similar as Derived tables  but one can use multiple times in a query
+
+```sql
+--start with WITH and column names
+WITH CTEName(Col1, Col2)
+AS
+--Define the CTE query using the two columns from above
+(SELECT Col1, Col2
+FROM TableName)
+
+--example
+--create a CTE to get Max BloodPressure by age
+WITH BloodPressureAge(Age, MaxBloodPressure)
+AS
+(SELECT Age, MAX(BloodPressure) AS MaxBloodPressure 
+FROM Kidney
+GROUP BY Age)
+--create query to use CTE
+SELECT a.Age, MIN(a.BloodPressure), b.MAXBloodPressure 
+FROM Kidney a
+--Join CTE with Table
+JOIN BloodPressureAge b 
+ON a.Age=b.Age
+GROUP BY a.Age, b.MaxBloodPressure   
+```
+
 CONCAT
 
 glues together two columns
@@ -593,6 +621,83 @@ WHILE @crt<10
 	END
 --view result
 SELECT @crt
+```
+
+Window Functions
+
+creates groups of data for analyzing 
+
+creates a window with OVER clause
+
+PARTITION BY creates a frame, if not, the frame is the entire table
+
+arrange results with ORDER BY
+
+allows aggregations
+
+```sql
+OVER (PARTITION BY SalesYear ORDER BY SalesYear)
+```
+
+FIRST_VALUE(column_name): returns the first value in the window
+
+LAST_VALUE(column_name): returns the last value in the window
+
+LEAD(): getting the next value (adjacent row) from the next row
+
+requires ORDER BY to order rows
+
+```sql
+SELECT sales, year, current
+--create a window function to get values from the next row
+	LEAD(current)
+	OVER (PARTITION BY year ORDER BY date) AS Next,
+	date AS ModDate
+FROM...
+```
+
+LAG(): getting the previous value/row
+
+The first row in a window where the `LAG()` function is used is NULL.
+
+ROW_NUMBER(): creating an index, adds up rows, 
+
+```sql
+SELECT sales, year, current
+	ROW_NUMBER()
+	OVER (PARTITION BY year ORDER BY date) AS Next,
+FROM...
+```
+
+Satistics
+
+STDEV: standard deviation 
+
+```sql
+SELECT sales, year, current
+	STDEV(current)
+	OVER () AS StandardDev,
+	--or
+	OVER (PARTITION BY year ORDER BY year) AS StDev
+FROM...
+```
+
+Mode
+
+create a CTE containing ordered count of values using ROW_NUMBER
+
+Then, write a query using the CTE to pick values with highest #
+
+```sql
+WITH QuotaCount AS (
+SELECT Person, SalesYear, CurrentQuota,
+	ROW_NUMBER()
+	OVER (PARTITION BY CurrentQuota ORDER BY CurrentQuota) AS QuotaList 
+FROM SaleGoal)
+
+SELECT CurrentQuota, QuotaList AS Mode
+FROM QuotaCount
+WHERE QuotaList IN (SELECT MAX(QuotaList) FROM QuotaCount)
 ```
 
 UNION & UNION ALL

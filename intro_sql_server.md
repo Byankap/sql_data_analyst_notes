@@ -149,6 +149,36 @@ ADD CONSTRAINT pk PRIMARY KEY (column_name)
 
 ```
 
+Date Functions
+
+```sql
+SELECT
+--returns dates as a datetime datatype local or UTC
+	GETDATE()
+	GETTUTCDATE()
+--returns the CURRENT TIME 
+	SYSDATETIME()
+	SYSUTCDATETIME()
+```
+
+Breaking down a date into parts
+
+```sql
+DECLARE
+	@SomeDate DATETIME2(3) = '2019-03-01...'
+SELECT YEAR(@SomeDate)
+SELECT MONTH()
+SELECT DAY()
+
+--parsing dates with date parts 
+DATEPART()
+--returns the numeric value of the part wanted
+SELECT DATEPART(YEAR,@dt) AS theYear;
+DATENAME()
+--returns a string value
+SELECT DATENAME(MONTH,@dt) AS theMonth;
+```
+
 DATEPART
 
 determine what part of date you want to calculate
@@ -174,12 +204,38 @@ SELECT DATEADD(DD, 30, '2020-06-21')
        DATEADD (DD, 5, ShipDate) AS DeliveryDate
 	FROM Shipments
 
+--Can subtract 4days and 3 hours
+SELECT 
+	DATEADD(HOUR, -3, DATEADD(DAY, -4, @SomeTime)) AS ...
+
 DATEDIFF()
---obtain the difference bwt two datetime values, always returns a number
+--obtain the difference bwt two datetime values, always returns a number, and rounds up
 DATEDIFF(datepart, startdate, endate
 SELECT DATEDIFF(DD, '2020-05-22', '2020-06-21')
 --output will. be 30
 ```
+
+SQL Server does not have an intuitive way to round down to the month, hour, or minute. You can, however, combine the `DATEADD()` and `DATEDIFF()` functions to perform this rounding.
+
+To round the date 1914-08-16 down to the year, we would call `DATEADD(YEAR, DATEDIFF(YEAR, 0, '1914-08-16'), 0)`. To round that date down to the month, we would call `DATEADD(MONTH, DATEDIFF(MONTH, 0, '1914-08-16'), 0)`
+
+Formatting Functions
+
+CAST()
+
+![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
+
+CONVERT()
+
+like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
+
+![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
+
+FORMAT()
+
+more flexible then the two above but slower (around 50,000 rows)
+
+![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
 
 DECLARE
 

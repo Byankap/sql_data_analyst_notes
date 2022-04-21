@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -17,6 +15,48 @@ DROP COLUMN column_name
 ALTER TABLE table_name
 ALTER COLUMN column_name
 	type VARCHAR(128)
+```
+
+Calendar Tables
+
+is a helpful utility table which you can use to perform date range calculations quickly and efficiently.
+
+```sql
+--Building a calendar 
+--creating columns
+CREATE TABLE dbo.Calendar
+( DateKey INT NOT NULL,
+	[Date] DATE NOT NULL,
+	DayOfWeek TINYINT NOT NULL,
+	...)
+--creating days
+SELECT 
+	CAST(D.DateKey AS INT) AS DateKey,
+	D.[DATE] AS [DATE],
+	CAST(d.[dayofweek] AS TINYINT) AS [DayOfWeek],
+	....
+
+---- Find Tuesdays in December for calendar years 2008-2010
+SELECT
+	c.Date
+FROM dbo.calendar c
+WHERE
+	c.MonthName = 'December'
+	AND c.DayName = 'Tuesday'
+	AND c.CalendarYear BETWEEN 2008 AND 2010
+ORDER BY
+	c.Date;
+```
+
+JOINING CALENDAR
+
+```sql
+SELECT
+    t.Column1,
+    t.Column2
+FROM dbo.Table t
+    INNER JOIN dbo.Calendar c
+        ON t.Date = c.Date;
 ```
 
 CASE WHEN
@@ -91,6 +131,10 @@ varchar: a max number of characters
 
 nvarchar
 
+MAX: high, latest
+
+MIN: low, previous
+
 COALESCE
 
 returns the first non-missing value
@@ -149,6 +193,21 @@ ADD CONSTRAINT pk PRIMARY KEY (column_name)
 
 ```
 
+Data
+
+Downsampling
+
+roll up to the hour instead of day
+
+```sql
+--Starting from the beginning until an occurance, then datediff returns an int of #of hours a rounding total
+SELECT
+	DATEADD(HOUR,DATEDIFF(HOUR,0,SomeDate),0)AS SomeDate
+FROM...
+```
+
+Upsampling
+
 Date Functions
 
 ```sql
@@ -185,6 +244,8 @@ determine what part of date you want to calculate
 
 DD: day
 
+week
+
 MM: month
 
 YY: year
@@ -219,29 +280,130 @@ SQL Server does not have an intuitive way to round down to the month, hour, or m
 
 To round the date 1914-08-16 down to the year, we would call `DATEADD(YEAR, DATEDIFF(YEAR, 0, '1914-08-16'), 0)`. To round that date down to the month, we would call `DATEADD(MONTH, DATEDIFF(MONTH, 0, '1914-08-16'), 0)`
 
+Building dates from parts
+
+```sql
+DATEFROMPARTS(year, month, day)
+--take int values and returns a date type
+TIMEFROMPARTS(hour, min, sec, fraction, precision)
+DATETIMEFROMPARTS(year, month, day, hour, min, sec,ms)
+--for more percision
+DATETIME2FROMPARTS(year, month, day, hour, min, sec, fraction, precision)
+DATETIMEOFFSETFROMPARTS(year, month, day, hour, min, sec, fraction, hour_offset, min_offset, precision)
+	--Changing offsets
+	DECLARE @someDate DATETIMEOFFSET=
+		'2019-04-10 12:59:02.2345 -04:00';
+	SELECT SWITCHOFFSET(@someDate, '-07:00') AS LATime;
+	--converting to DATETIMEOFFSET
+	DECLARE @someDate DATETIME2(3)=
+		'2019-04-10 12:59:02.234';
+	SELECT TODATETIMEOFFSET(@someDate, '-04.00') AS EDT;
+	--Timezone swaps with TODATETIMEOFFSET
+	DECLARE @someDate DATETIME2(3)=
+		'2019-04-10 12:59:02.234';
+	SELECT TODATETIMEOFFSET(
+		DATEADD(Hour, 7, @someDate),
+		'+02:00')AS BonnTime;
+
+--example
+DATETIMEFROMPARTS(1918, 11, 11, 05, 45, 17, 995) AT TIME ZONE 'UTC'AS DT
+
+--ex2
+SELECT TOP(10)
+	c.CalendarQuarterName,
+	c.MonthName,
+	c.CalendarDayOfYear
+FROM dbo.Calendar c
+WHERE
+	-- Create dates from component parts
+	DATEFROMPARTS(c.CalendarYear, c.CalendarMonth, c.Day) >= '2018-06-01'
+	AND c.DayName = 'Tuesday'
+ORDER BY
+	c.FiscalYear,
+	c.FiscalDayOfYear ASC;
+```
+
+SWITCHOFFSET()
+
+function to change the time zone of a `DATETIME`
+, `DATETIME2`
+, or `DATETIMEOFFSET`
+ typed date or a valid date string
+
+takes two parameters: the date or string as input and the time zone offset. It returns the time in that new time zone,
+
+Discovering time zones
+
+```sql
+SELECT
+	tzi.name,
+	tzi.current_utc_offset,
+	tzi.is_currently_dst
+FROM sys.time_zone_info tzi
+	WHERE tzi.name LIKE '%Time Zone%';
+```
+
+Error-handling 
+
+-safe versions
+
+-doest the job with a NULL
+
+TRY_PARSE
+
+TRY_CONVERT
+
+TRY_CAST
+
 Formatting Functions
 
 CAST()
 
-![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
+
+Dates
+
+```sql
+--casting strings
+SELECT 
+	CAST('09/19/99' AS DATE) AS USDate;
+```
 
 CONVERT()
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
-![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
+
+Dates
+
+```sql
+SELECT 
+	CONVERT(DATETIME2(3),
+		'April 4, 2019 11:52:29.998 PM') AS April4
+```
 
 FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
-![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
+
+PARSE()
+
+take non traditional date formate into date types
+
+to parse a string as a date type using a spe
+
+VERY SLOW
+
+```sql
+SELECT
+	PARSE('25 Dezember 2014' AS DATE
+		USING 'de-de') AS Weihnachten;
+```
 
 DECLARE
 
 creating variable to avoid repeatability 
 
-![Screen Shot 2022-03-29 at 12.51.17 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30468c39-401e-4fc3-a464-d8830ca9222d/Screen_Shot_2022-03-29_at_12.51.17_PM.png)
 
 ```sql
 DECLARE @
@@ -257,7 +419,6 @@ DECLARE @test_int INT
 SET @test_int = 5
 ```
 
-![Screen Shot 2022-03-29 at 1.08.54 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34aff8ae-68df-4477-a466-e26bfb543ea6/Screen_Shot_2022-03-29_at_1.08.54_PM.png)
 
 DELETE
 
@@ -412,18 +573,6 @@ FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
 
-![Screen Shot 2022-03-28 at 8.36.15 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5959b80b-0485-4498-ab98-5d644cff793c/Screen_Shot_2022-03-28_at_8.36.15_PM.png)
-
-RIGHT JOIN
-
-![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
-
-NOT NULL
-
-prevents from obtaining null values
-
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/13ef8933-3a96-43a9-b8eb-15e6fe083f13/Untitled.png)
-
 BlANK VALUES
 
 are different from null values to exclude them 
@@ -445,6 +594,12 @@ SELECT TOP (10) column1, column2
 FROM table
 ORDER By column2 DESC, column1;
 ```
+
+WITH ROLLUP
+
+comes after GROUP BY 
+
+used for non-measure attribute hierarchal data, by taking the combo of each column follow by each matching value 
 
 ROUND
 
@@ -561,6 +716,17 @@ SELECT
 
 ```
 
+COUNT()
+
+COUNT_BIG()
+
+returns a 64bit INT
+
+```sql
+--number of rows
+COUNT(*) or COUNT(1) or COUNT(1/0)
+```
+
 ### Strings
 
 ```sql
@@ -608,7 +774,6 @@ Temporary Tables
 
 using a # to create a temp table 
 
-![Screen Shot 2022-03-29 at 1.18.50 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1bf5af8c-0f6a-46f7-9766-043df6ff7b2e/Screen_Shot_2022-03-29_at_1.18.50_PM.png)
 
 WHERE
 

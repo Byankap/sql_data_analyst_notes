@@ -359,7 +359,6 @@ Formatting Functions
 
 CAST()
 
-
 Dates
 
 ```sql
@@ -418,7 +417,6 @@ DECLARE @my_artist VARCHAR(100)
 DECLARE @test_int INT
 SET @test_int = 5
 ```
-
 
 DELETE
 
@@ -512,6 +510,40 @@ ISNULL(column2, "Unknown") AS NewCountry
 FROM...
 
 --can substitute values from one column for another 
+```
+
+GROUPING SETS
+
+The GROUPING SETS option **gives you the ability to combine multiple GROUP BY clauses into one GROUP BY clause.** The results are the equivalent of UNION ALL of the specified groups.
+
+```sql
+--example
+SELECT
+	c.CalendarYear,
+	c.CalendarMonth,
+	c.DayOfWeek,
+	c.IsWeekend,
+	SUM(ir.NumberOfIncidents) AS NumberOfIncidents
+FROM dbo.IncidentRollup ir
+	INNER JOIN dbo.Calendar c
+		ON ir.IncidentDate = c.Date
+GROUP BY GROUPING SETS
+(
+    -- Each non-aggregated column from above should appear once
+  	-- Calendar year and month
+	(c.CalendarYear, c.CalendarMonth),
+  	-- Day of week
+	(c.DayOfWeek),
+  	-- Is weekend or not
+	(c.IsWeekend),
+    -- This remains empty; it gives us the grand total
+	()
+)
+ORDER BY
+	c.CalendarYear,
+	c.CalendarMonth,
+	c.DayOfWeek,
+	c.IsWeekend;
 ```
 
 JOIN
@@ -660,6 +692,27 @@ LOG(): returns the natural logarithm
 
 ```sql
 LOG(number [,Base])
+```
+
+Running Totals 
+
+cumulative value 
+
+The sum function needs to be a window function in order to get the detailed records and aggregated total. Using partition to get the totals per team. Use RANGE BETWEEN, use unbound preceding to start the calculation of winner from the beginning. The window following expression, CURRENT ROW, so the sum occur at the present row 
+
+```sql
+--example
+total number of wins per team per games
+SELECT
+	s.team,
+	s.game,
+	s.runsScored,
+	SUM(s.runsScored) OVER(
+		PARTITION BY s.team
+		ORDER BY s.Game ASC
+		RANGE BETWEEN
+			UNBOUNDED PRECEDING
+			AND CURRENT ROW) AS TotalRuns
 ```
 
 SELECT
@@ -860,6 +913,52 @@ allows aggregations
 OVER (PARTITION BY SalesYear ORDER BY SalesYear)
 ```
 
+When creating window functions there are two options 
+
+RANGE
+
+-Specifies a range of results
+
+-Duplicates processed all at once, so if theres more than one, it sum both of them for both records 
+
+-Supports UNBOUNDED and CURRENT ROW 
+
+ROWS
+
+-specifies a # of rows 
+
+-Duplicates processed a row at a time, the second duplicate will have the total of the previous 
+
+-Supports UNBOUNDED and CURRENT ROW and # of rows
+
+```sql
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+	ir.NumberOfIncidents,
+    -- Fill in the correct window function
+	AVG(ir.NumberOfIncidents) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+      	-- Fill in the three parts of the window frame
+		ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+	) AS MeanNumberOfIncidents
+FROM dbo.IncidentRollup ir
+	INNER JOIN dbo.Calendar c
+		ON ir.IncidentDate = c.Date
+WHERE
+	c.CalendarYear = 2019
+	AND c.CalendarMonth IN (7, 8)
+	AND ir.IncidentTypeID = 1
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+```
+
+DENSE_RANK()
+
+Ascending INT value start from 1. Can have ties, not skip #
+
 FIRST_VALUE(column_name): returns the first value in the window
 
 LAST_VALUE(column_name): returns the last value in the window
@@ -881,6 +980,61 @@ LAG(): getting the previous value/row
 
 The first row in a window where the `LAG()` function is used is NULL.
 
+```sql
+SELECT
+	dsr.Customer,
+	dsr.MonthStart
+	LAG(dsr.NumberVisits) OVER (PARTITION BY dsr.Customer ORDER BY dsr.MonthStart) AS Prior
+	dsr.NumberVisits
+```
+
+Creating filters and CTE
+
+```sql
+
+--Getting prior values after filtering out previous information
+WITH records AS (
+	SELECT 
+		Date,
+		LAG(Val, 1) OVER (ORDER BY Date) AS PriorVal
+		Val
+FROM t
+)
+SELECT 
+	r.Date,
+	r.PriorVal,
+	r.Val
+FROM records r
+WHERE
+	r.Date > '2020-01-02'
+```
+
+Using DATEDIFF and LAG/LEAD
+
+```sql
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+    -- Fill in the days since last incident
+	DATEDIFF(DAY, LAG(ir.IncidentDate, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	), ir.IncidentDate) AS DaysSinceLastIncident,
+    -- Fill in the days until next incident
+	DATEDIFF(DAY, ir.IncidentDate, LEAD(ir.IncidentDate, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	)) AS DaysUntilNextIncident
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentDate >= '2019-07-02'
+	AND ir.IncidentDate <= '2019-07-31'
+	AND ir.IncidentTypeID IN (1, 2)
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+```
+
 ROW_NUMBER(): creating an index, adds up rows, 
 
 ```sql
@@ -890,7 +1044,11 @@ SELECT sales, year, current
 FROM...
 ```
 
-Satistics
+RANK()
+
+Ascending INT value starting from 1. Can have ties, can skip # (not unique)
+
+Statistics
 
 STDEV: standard deviation 
 

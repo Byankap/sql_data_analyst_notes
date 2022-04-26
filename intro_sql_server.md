@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -15,6 +17,10 @@ DROP COLUMN column_name
 ALTER TABLE table_name
 ALTER COLUMN column_name
 	type VARCHAR(128)
+
+--Adding new column 
+ALTER TABLE table_name
+ADD column_name data_type
 ```
 
 Calendar Tables
@@ -371,7 +377,6 @@ CONVERT()
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
-
 Dates
 
 ```sql
@@ -383,7 +388,6 @@ SELECT
 FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
-
 
 PARSE()
 
@@ -402,7 +406,6 @@ SELECT
 DECLARE
 
 creating variable to avoid repeatability 
-
 
 ```sql
 DECLARE @
@@ -604,7 +607,6 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
-
 BlANK VALUES
 
 are different from null values to exclude them 
@@ -826,7 +828,6 @@ USING SUBSTRING (firstname FROM 1 for 16)
 Temporary Tables
 
 using a # to create a temp table 
-
 
 WHERE
 

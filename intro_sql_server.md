@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -94,12 +92,34 @@ CASE WHEN x <30 THEN 1
 
 CAST
 
+```sql
+CAST(expression AS data_type [(length)])
+```
+
 Convert a value to an int datatype
 
 ```sql
 -- Calculate the net amount as amount + fee
 SELECT transaction_date, amount + CAST(fee AS integer) AS net_amount 
 FROM transactions;
+```
+
+CHARINDEX()
+
+looks for a character expression in a given string. Returns its starting position 
+
+```sql
+CHARINDEX(expression_to_find, expression_to_search [, start_location])
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for the "dan" expression in the first_name
+WHERE CHARINDEX('dan', first_name) > 0 
+    -- Look for last_names that do not contain the letter "z"
+	AND CHARINDEX('z', last_name) = 0;
 ```
 
 CREATE TABLE
@@ -188,6 +208,8 @@ CONCAT
 glues together two columns
 
 ```sql
+CONCAT(string1, string2 [,stringN])
+
 -creating surrogate and primary keys
 ALTER TABLE 
 ADD COlUMN column_c VARCHAR (250)
@@ -197,6 +219,14 @@ SET column_c = CONCAT(column_a, column_b) --Surrogate key
 ALTER TABLE table_name
 ADD CONSTRAINT pk PRIMARY KEY (column_name)
 
+```
+
+CONCAT_WS()
+
+```sql
+CONCAT_WS(seperator, string1, string2 [,stringN])
+CONCAT_WS(' ', 'Apples', 'and', 'oranges') AS result
+--automatically adds the spaces in the string
 ```
 
 Data
@@ -215,6 +245,18 @@ FROM...
 Upsampling
 
 Date Functions
+
+Higher Precision
+
+- `SYSDATETIME()`
+- `SYSUTCDATETIME()`
+- `SYSDATETIMEOFFSET()`
+
+Lower Precision
+
+- `GETDATE()`
+- `GETUTCDATE()`
+- `CURRENT_TIMESTAMP`
 
 ```sql
 SELECT
@@ -244,19 +286,32 @@ DATENAME()
 SELECT DATENAME(MONTH,@dt) AS theMonth;
 ```
 
+DATEFROMPARTS
+
+```sql
+DATEFROMPARTS(2019,3,5) as new_date;
+
+-- Create a date as the start of the month of the first vote
+	DATEFROMPARTS(YEAR(first_vote_date), MONTH(first_vote_date), 1) AS first_vote_starting_month
+```
+
 DATEPART
 
 determine what part of date you want to calculate
 
 DD: day
 
-week
+wk, ww: week
 
 MM: month
 
 YY: year
 
 HH: hour
+
+DY, Y : dayofyear
+
+dw, w: weekday
 
 ```sql
 DATEADD()
@@ -365,6 +420,7 @@ Formatting Functions
 
 CAST()
 
+
 Dates
 
 ```sql
@@ -375,7 +431,14 @@ SELECT
 
 CONVERT()
 
+```sql
+CONVERT(data_type [(length)], expression [,style])
+```
+
+Used to change data types to another
+
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
+
 
 Dates
 
@@ -406,6 +469,7 @@ SELECT
 DECLARE
 
 creating variable to avoid repeatability 
+
 
 ```sql
 DECLARE @
@@ -502,6 +566,10 @@ FROM...
 ```
 
 tip: dont use SELECT *, be specific  in case table structure changes 
+
+ISDATE(expression)
+
+Determine whether an expression is a valid data type
 
 ISNULL
 
@@ -627,6 +695,37 @@ ORDER BY column
 SELECT TOP (10) column1, column2
 FROM table
 ORDER By column2 DESC, column1;
+```
+
+PATINDEX
+
+Similar to CHARINDEX, but more powerful. Returns starting position of a pattern in an expression
+
+```sql
+PATINDEX('%pattern%', expression, [location ])
+--ex
+-- Look for first names that contain "rr" in the middle
+WHERE PATINDEX('%rr%', first_name) > 0;
+
+-- Look for first names that start with C and the 3rd letter is r
+WHERE PATINDEX('C_r%', first_name) > 0;
+
+-- Look for first names that have an "a" followed by 0 or more letters and then have a "w"
+WHERE PATINDEX('%a%w%', first_name) > 0;
+
+-- Look for first names that contain one of the letters: "x", "w", "q"
+WHERE PATINDEX('%[xwq]%', first_name) > 0;
+
+  -- Select only voters with a first name less than 5 characters
+WHERE LEN(first_name) < 5
+   -- LopaTINok for the desired pattern in the email address
+	AND PATINDEX('j_a%yahoo.com', email) > 0;
+
+--wild chards
+-- % : match any string of any length
+-- _ : match on a single character
+-- [] : match any character in brackets
+
 ```
 
 WITH ROLLUP
@@ -798,7 +897,15 @@ SELECT
 	RIGHT(column1, #) AS new_name (works backwards)
 --Selecting characters from the middle of the text
 SELECT 
-	SUBSTRING(column name, 12(#of character to start from), 12(#of character to extract) AS new_name
+	SUBSTRING(column name/character_expression, 12(#of character to start from), 12(#of character to extract) AS new_name
+
+SELECT
+    -- Concatenate the first and last name
+	CONCAT('***' , first_name, ' ', UPPER(last_name), '***') AS name,
+    -- Mask the last two digits of the year
+    REPLACE(birthdate, Substring(CAST(birthdate AS varchar), 3, 2), 'XX') AS birthdate,
+	email,
+	country
 
 --find a specific character within a string
 SELECT
@@ -807,6 +914,42 @@ SELECT
 --replacing characters
 SELECT 
 	TOP(5) REPLACE(column name, 'character', 'replaced character') AS new_name
+--removing
+-- Remove the text '(Valrhona)' from the name
+	REPLACE(company, '(Valrhona)', '') AS new_company,
+```
+
+STRING_AGG()
+
+Concatenates the values of string expressions and places separator values between them. 
+
+```sql
+STRING_AGG(expression, seperator) [<order_clause>]
+[WITHIN GROUP (ORDER BY expression)
+
+SELECT 
+	STRING_AGG(column_name, ',') AS column_name
+--output is the column values with commas
+
+--create a column with first, last name and the (first vote date)
+SELECT
+	STING_AGG(CONCAT(first_name, ' ', last_name, ' (', first_vote_date, ')'), CHAR(13)) AS list_of_names
+
+--creating a list from a column from specific rows
+SELECT
+	-- Create a list with all bean origins, delimited by comma
+	string_agg(bean_origin, ',') AS bean_origins
+FROM ratings
+WHERE company IN ('Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters');
+```
+
+STRING_SPLIT()
+
+Divides a string into smaller pieces, based on a separator. Return a single column
+
+```sql
+STRING_SPLIT(string, seperator)
+
 ```
 
 SUBSTRING
@@ -825,9 +968,23 @@ TYPE varchar(16)
 USING SUBSTRING (firstname FROM 1 for 16)
 ```
 
+SET DATEFORMAT
+
+sets the order of the dataparts for interpreting stings as dates
+
+```sql
+SET DATEFORMAT {format}
+
+--it will not consider the date as a valid date only 30-12-2019
+DECLARE @date1 NVARCHAR(20) = '12-30-2019'
+SET DATEFORMAT dmy;
+SELECT ISDATE(@date1) AS invalid_dmy;
+```
+
 Temporary Tables
 
 using a # to create a temp table 
+
 
 WHERE
 

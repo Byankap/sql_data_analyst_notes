@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -19,6 +21,10 @@ ALTER COLUMN column_name
 --Adding new column 
 ALTER TABLE table_name
 ADD column_name data_type
+
+-- Add the book_id foreign key
+ALTER TABLE fact_booksales(--table you want to add) ADD CONSTRAINT sales_book
+    FOREIGN KEY (book_id) REFERENCES dim_book_star(--table where it came from) (book_id);
 ```
 
 Calendar Tables
@@ -102,6 +108,21 @@ Convert a value to an int datatype
 -- Calculate the net amount as amount + fee
 SELECT transaction_date, amount + CAST(fee AS integer) AS net_amount 
 FROM transactions;
+```
+
+Rounding Functions
+
+CEILING(numeric_expression)
+
+rounds up to the nearest int
+
+returns the smallest INT greater than or equal to the expression
+
+```sql
+CEILING(-50.46) AS A
+--output -50
+CEILING(70.73) AS B
+--output 71
 ```
 
 CHARINDEX()
@@ -452,6 +473,7 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
+
 PARSE()
 
 take non traditional date formate into date types
@@ -517,6 +539,63 @@ FROM kidney a
 JOIN(SELECT AVG(Age) AS AverageAge
 FROM kidney) b
 ON a.Age = b.AverageAge
+```
+
+analytic function
+
+FIRST_VALUE()
+
+returns the first value in an ordered set
+
+```sql
+FIRST_VALUE(numeric_expression)
+	OVER ([[PARTITION BY column] ORDER BY column ROW_or_RANGE frame)
+```
+
+OVER clause components
+
+PARTITION : optional - divides the result set into partitions
+
+ORDER BY: mandatory - order set result
+
+ROW_or_RANGE: optional - sets partition limits
+
+Partition Limits
+
+```sql
+
+--this will take all rows from the table 
+RANGE BETWEEN start_boundary AND end_boundary
+
+ROW BETWEEN start_boundary AND end_boundary
+
+```
+
+Boundary
+
+UNBOUNDED PRECEDING: first row in partition
+
+UNBOUNDED FOLLOWING: last row in partition
+
+CURRENT ROW
+
+PRECEDING: previous row
+
+FOLLOWING: next row
+
+Rounding Functions
+
+FLOOR(numeric_expression)
+
+rounds down tot he nearest int
+
+returns the largest INT less than or equal to the expression
+
+```sql
+FLOOR(-50.46) AS A
+--output -51
+FLOOR(70.73) AS B
+--output 70
 ```
 
 FROM
@@ -675,6 +754,32 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
+
+analytic function
+
+LAST_VALUE()
+
+returns the last value in an ordered set
+
+```sql
+LAST_VALUE(numeric_expression)
+	OVER ([[PARTITION BY column] ORDER BY column ROW_or_RANGE frame)
+```
+
+OVER clause components
+
+PARTITION : optional - divides the result set into partitions
+
+ORDER BY: mandatory - order set result
+
+ROW_or_RANGE: optional - sets partition limits
+
+NOT NULL
+
+prevents from obtaining null values
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/13ef8933-3a96-43a9-b8eb-15e6fe083f13/Untitled.png)
+
 BlANK VALUES
 
 are different from null values to exclude them 
@@ -785,15 +890,17 @@ Truncating=15.000
 
 MORE MATH FUNCTIONS
 
-ABS():  absolute, returns positive numeric values 
-
-SQRT(): finding the square root
+ABS():  absolute, returns positive numeric values, even if it is a negative
 
 LOG(): returns the natural logarithm
 
 ```sql
 LOG(number [,Base])
 ```
+
+SIGN(numeric_expression): returns the sign of an expression, as an INT
+
+SQRT(): finding the square root
 
 Running Totals 
 

@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -265,6 +263,22 @@ FROM...
 
 Upsampling
 
+CREATE ROLE
+
+```sql
+-empty role
+CREATE ROLE data_analyst;
+
+-role for temp
+CREATE ROLE intern WITH PASSWORD 'PasswordForIntern' VALID UNTIL '2020-01-01'
+
+--access to create
+CREATE ROLE admin CREATEDB
+
+--changing roles
+ALTER ROLE admin CREATEROLE;
+```
+
 Date Functions
 
 Higher Precision
@@ -314,6 +328,28 @@ DATEFROMPARTS(2019,3,5) as new_date;
 
 -- Create a date as the start of the month of the first vote
 	DATEFROMPARTS(YEAR(first_vote_date), MONTH(first_vote_date), 1) AS first_vote_starting_month
+```
+
+Database views
+
+is the result set of a stored query on the data, which the database users can query just as they would in a persistent database collection object
+
+```sql
+CREATE VIEW view_name AS
+SELECT col1, col2
+FROM table_name
+WHERE condition;
+```
+
+viewing views in the database
+
+```sql
+--includes system views
+SELECT* FROM INFORMATION_SCHEMA.views;
+
+--excludes
+SELECT* FROM INFORMATION_SCHEMA.views
+WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
 ```
 
 DATEPART
@@ -473,6 +509,7 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
+_PM.png)
 
 PARSE()
 
@@ -506,6 +543,7 @@ DECLARE @my_artist VARCHAR(100)
 DECLARE @test_int INT
 SET @test_int = 5
 ```
+
 
 DELETE
 
@@ -1385,3 +1423,65 @@ WHERE condition1 AND condition2 AND ...;
 ```
 
 tip: dont forget the WHERE clause, otherwise it will update all the columns
+
+View
+
+a temporary table that has no memory. a view is **a virtual table based on the result-set of an SQL statement**. A view contains rows and columns, just like a real table. The fields in a view are fields from one or more real tables in the database
+
+modifying the underlying query that makes the view
+
+```sql
+CREATE OR REPLACE VIEW view_name AS new_query
+```
+
+replacing views
+
+- the new query must generate same column names, order and data types as the old query
+    - new columns can be added at the end.
+
+granting and revoking access to a view
+
+```sql
+GRANT priviledge(s) or REVOKE priviledge(s)
+ON object
+TO role or FROM role
+--privileges: SELECT, INSERT, UPDATE, DELETE
+
+-examples
+GRANT UPDATE ON ratings TO PUBLIC;
+REVOKE INSERT ON fils FROM ub_users;
+-- Revoke everyone's update and insert privileges
+REVOKE UPDATE, INSERT ON long_reviews FROM PUBLIC; 
+
+-- Grant editor update and insert privileges 
+GRANT UPDATE, INSERT ON long_reviews TO editor;
+
+```
+
+Dropping views
+
+```sql
+DROP VIEW view_name[CASCADE| RESTRICT];
+```
+
+-RESTRICT (default) returns an error if there are objects that depend on the view
+
+-CASCADE: drops view and any object that depends on that view
+
+Materialized views
+
+physically stores  results, not the query 
+
+great for long execution time, but not great for data being updated often
+
+useful for data warehouses 
+
+One key difference is that we can refresh materialized views, while no such concept exists for non-materialized views.
+
+```sql
+CREATE MATERIALIZED VIEW my_mv AS 
+SELECT*
+FROM existing_table'
+
+REFRESH MATERIALIZED VIEW my_mv;
+```

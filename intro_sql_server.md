@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -150,6 +152,7 @@ unique table name
 ```sql
 CREATE TABLE test_table(
 	Test_date date,
+	test_name text,
 	test_name varchar (20),
 	test_int int);
 ```
@@ -275,8 +278,17 @@ CREATE ROLE intern WITH PASSWORD 'PasswordForIntern' VALID UNTIL '2020-01-01'
 --access to create
 CREATE ROLE admin CREATEDB
 
+-- Create an admin role with two attributes 
+CREATE ROLE admin WITH CREATEDB CREATEROLE;
+
 --changing roles
 ALTER ROLE admin CREATEROLE;
+--continue
+-- Add Marta to the data scientist group
+GRANT data_scientist TO marta;
+-- Celebrate! You hired data scientists.
+-- Remove Marta from the data scientist group
+REVOKE data_scientist FROM marta;
 ```
 
 Date Functions
@@ -509,7 +521,6 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
-_PM.png)
 
 PARSE()
 
@@ -543,7 +554,6 @@ DECLARE @my_artist VARCHAR(100)
 DECLARE @test_int INT
 SET @test_int = 5
 ```
-
 
 DELETE
 
@@ -660,6 +670,26 @@ GROUP BY State
 HAVING
 
 appear after the GROUP BY clause and filters on groups or aggregates
+
+Horizontal Partitioning
+
+splitting tables into subcategories by splitting the rows.
+
+Vertical partitioning- moves specific columns to seperate tabes 
+
+```sql
+--creating quarter partitions (table: id, product_id,amount, total_price, timestamp)
+CREATE TABLE sales(
+	...
+	timestamp DATA NOT NULL
+)
+PARTITION BY RANGE (timestamp);
+CREATE TABLE sales_2019_q1 PARTITION OF sales
+	FOR VALUES FROM ('2019-01-01') TO ('2019-03-31');
+CREATE TABLE sales_2019_q4 PARTITION OF sales
+	FOR VALUES FROM ('2019-09-01') TO ('2019-12-31');
+CREATE INDEX ON sales ('timestamp');
+```
 
 INSERT INTO
 
@@ -792,7 +822,6 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
-
 analytic function
 
 LAST_VALUE()
@@ -1129,7 +1158,6 @@ SELECT ISDATE(@date1) AS invalid_dmy;
 Temporary Tables
 
 using a # to create a temp table 
-
 
 WHERE
 
@@ -1477,11 +1505,3 @@ great for long execution time, but not great for data being updated often
 useful for data warehouses 
 
 One key difference is that we can refresh materialized views, while no such concept exists for non-materialized views.
-
-```sql
-CREATE MATERIALIZED VIEW my_mv AS 
-SELECT*
-FROM existing_table'
-
-REFRESH MATERIALIZED VIEW my_mv;
-```

@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -485,10 +483,54 @@ TRY_CONVERT
 
 TRY_CAST
 
+```sql
+--enclose statements within the try block
+BEGIN TRY
+	{sq_statement| statement_block}
+END TRY
+--place error handling code within the catch block
+BEGIN CATCH
+	[{sql_statement | statement_block}]
+END CATCH
+[;]
+
+--ex
+BEGIN TRY
+    INSERT INTO products (product_name, stock, price)
+        VALUES ('Trek Powerfly 5 - 2018', 10, 3499.99);
+    SELECT 'Product inserted correctly!';
+END TRY
+BEGIN CATCH
+     SELECT 'An error occurred! You are in the CATCH block';   
+END CATCH
+
+```
+
+Error Functions
+
+ERROR_NUMBER(): returns  # of error
+
+ERROR_SEVERITY(): returns error severity (11-19)
+
+ERROR_STATE(): returns state of the error
+
+ERROR_LINE(): # of line of the error
+
+ERROR_PROCEDURE(): returns name of stored procedure or trigger
+
+ERROR_MESSAGE(): returns the text message
+
+ 
+
+```sql
+BEGIN CATCH
+	SELECT ERROR_NUMBER() AS ERROR_NUMBER
+END CATCH
+```
+
 Formatting Functions
 
 CAST()
-
 
 Dates
 
@@ -689,6 +731,24 @@ CREATE TABLE sales_2019_q1 PARTITION OF sales
 CREATE TABLE sales_2019_q4 PARTITION OF sales
 	FOR VALUES FROM ('2019-09-01') TO ('2019-12-31');
 CREATE INDEX ON sales ('timestamp');
+
+-- Create a new table called film_partitioned
+CREATE TABLE film_partitioned (
+  film_id INT,
+  title TEXT NOT NULL,
+  release_year TEXT
+)
+PARTITION BY LIST (release_year);
+
+-- Create the partitions for 2019, 2018, and 2017
+CREATE TABLE film_2019
+	PARTITION OF film_partitioned FOR VALUES IN ('2019');
+    
+CREATE TABLE film_2018
+	PARTITION OF film_partitioned FOR VALUES IN('2018');
+    
+CREATE TABLE film_2017
+	PARTITION OF film_partitioned FOR VALUES IN ('2017');
 ```
 
 INSERT INTO
@@ -822,6 +882,7 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
+
 analytic function
 
 LAST_VALUE()
@@ -1158,6 +1219,7 @@ SELECT ISDATE(@date1) AS invalid_dmy;
 Temporary Tables
 
 using a # to create a temp table 
+
 
 WHERE
 
@@ -1505,3 +1567,11 @@ great for long execution time, but not great for data being updated often
 useful for data warehouses 
 
 One key difference is that we can refresh materialized views, while no such concept exists for non-materialized views.
+
+```sql
+CREATE MATERIALIZED VIEW my_mv AS 
+SELECT*
+FROM existing_table'
+
+REFRESH MATERIALIZED VIEW my_mv;
+```

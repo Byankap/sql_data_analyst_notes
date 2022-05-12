@@ -520,6 +520,39 @@ ERROR_PROCEDURE(): returns name of stored procedure or trigger
 
 ERROR_MESSAGE(): returns the text message
 
+ways of customizing 
+
+concatenating strings
+
+```sql
+CONCAT()
+```
+
+FORMATMESSAGE function
+
+```sql
+FORMATMESSAGE({'msg_string'|msg_number}, [param_value [,...n]]) 
+
+--example
+DECLARE @product_name AS NVARCHAR(10) = 'Trek CrossRip+ - 2018';
+-- Set the number of sold bikes
+DECLARE @sold_bikes AS INT = 100;
+DECLARE @current_stock INT;
+
+SELECT @current_stock = stock FROM products WHERE product_name = @product_name;
+
+DECLARE @my_message NVARCHAR(500) =
+	-- Customize the error message
+	FORMATMESSAGE('There are not enough %s bikes. You have %d in stock.', @product_name, @current_stock);
+
+IF (@current_stock - @sold_bikes < 0)
+	-- Throw the error
+	THROW 50000, @my_message, 1;
+
+--ouput: if nvarchar changed to 50
+error message: ('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]There are not enough Trek CrossRip+ - 2018 bikes. You have 12 in stock. (50000) (SQLExecDirectW)')
+```
+
  
 
 ```sql
@@ -531,6 +564,8 @@ END CATCH
 Formatting Functions
 
 CAST()
+
+![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
 
 Dates
 
@@ -550,6 +585,7 @@ Used to change data types to another
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
+![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
 
 Dates
 
@@ -563,6 +599,7 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
+![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
 
 PARSE()
 
@@ -582,6 +619,7 @@ DECLARE
 
 creating variable to avoid repeatability 
 
+![Screen Shot 2022-03-29 at 12.51.17 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30468c39-401e-4fc3-a464-d8830ca9222d/Screen_Shot_2022-03-29_at_12.51.17_PM.png)
 
 ```sql
 DECLARE @
@@ -596,6 +634,8 @@ DECLARE @my_artist VARCHAR(100)
 DECLARE @test_int INT
 SET @test_int = 5
 ```
+
+![Screen Shot 2022-03-29 at 1.08.54 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34aff8ae-68df-4477-a466-e26bfb543ea6/Screen_Shot_2022-03-29_at_1.08.54_PM.png)
 
 DELETE
 
@@ -883,6 +923,12 @@ FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
 
+![Screen Shot 2022-03-28 at 8.36.15 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5959b80b-0485-4498-ab98-5d644cff793c/Screen_Shot_2022-03-28_at_8.36.15_PM.png)
+
+RIGHT JOIN
+
+![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
+
 analytic function
 
 LAST_VALUE()
@@ -901,6 +947,17 @@ PARTITION : optional - divides the result set into partitions
 ORDER BY: mandatory - order set result
 
 ROW_or_RANGE: optional - sets partition limits
+
+NOT EXISTS
+
+```sql
+--check to see if there is a staff memeber
+IF NOT EXISTS(
+	SELECT * 
+	FROM staff 
+	WHERE staff_id = 15)
+		RAISERROR('No staff member...'))
+```
 
 NOT NULL
 
@@ -959,6 +1016,18 @@ WHERE LEN(first_name) < 5
 -- _ : match on a single character
 -- [] : match any character in brackets
 
+```
+
+RAISERROR 
+
+it is recommended to use THROW instead
+
+```sql
+RAISERROR({msg_str|msg_id|@local_variable_message},
+	severity,
+	state,
+	[argument[,...n]])
+	[WITH option[,...n]]
 ```
 
 WITH ROLLUP
@@ -1220,6 +1289,22 @@ Temporary Tables
 
 using a # to create a temp table 
 
+![Screen Shot 2022-03-29 at 1.18.50 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1bf5af8c-0f6a-46f7-9766-043df6ff7b2e/Screen_Shot_2022-03-29_at_1.18.50_PM.png)
+
+THROW
+
+return an error caught by catch block
+
+A THROW statement w/o parameters re-throws the OG error and SHOULD be placed within the CATCH block
+
+```sql
+BEGIN CATCH or TRY
+	THROW[error_number, message, state][;]
+	SELECT ...
+END CATCH or TRY
+```
+
+syntax -place the throw before a select statement, if not use ; at the end of both
 
 WHERE
 

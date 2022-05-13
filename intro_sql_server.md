@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -1120,6 +1122,25 @@ SELECT
 			AND CURRENT ROW) AS TotalRuns
 ```
 
+SavePoints
+
+markers within a transaction
+
+allows to rollback to the savepoints
+
+```sql
+SAVE {TRAN|TRANSACTION} {savepoint_name|@savepoint_variable} [;]
+
+--example
+BEGIN TRAN
+	SAVE TRAN savepoint1;
+	INSERT INTO customers VALUES ('m', 'd', 'md', '434343');
+	ROLLBACK TRAN savepoint1;
+	SELECT @@TRANCOUNT AS 'value';
+COMMIT TRAN;
+--output will be 0 due to the rollback
+```
+
 SELECT
 
 key term for retrieving data
@@ -1305,6 +1326,36 @@ END CATCH or TRY
 ```
 
 syntax -place the throw before a select statement, if not use ; at the end of both
+
+Transaction Statements 
+
+```sql
+BEGIN {TRAN|TRANSACTION}
+	[{transaction_name|@tran_name_variable}
+		[WITH MARK['description']]
+	]
+[;]
+
+--the end of transaction
+COMMIT[{TRAN|TRANSACTION}[transaction_name|tran_name_variable]]
+	[WITH (DELAYED_DURABILITY = {OFF|ON})] [;]
+
+--reversing back a transaction, buy using it in a try and catch block, if there is a mistake, then it will go back to og state
+ROLLBACK {TRAN|TRANSACTION}
+	[transaction_name|@tran_name_variable|
+		savepoint_name|@savepoint_variable]
+[;]
+
+--example
+Account 1 = $24k
+Account 5 = $35k
+BEGIN TRAN;
+	UPDATE accounts SET current_balance=current_balance-100 WHERE account_id=1;
+	INSERT INTO transactions VALUES (1, -100, GETDATE());
+	UPDATE accounts SET current_balance=current_balance+100 WHERE account_id=5;
+	INSERT INTO transactions VALUES (5, 100, GETDATE());
+COMMIT TRAN;
+```
 
 WHERE
 
@@ -1660,3 +1711,22 @@ FROM existing_table'
 
 REFRESH MATERIALIZED VIEW my_mv;
 ```
+
+XACT_ABORT
+
+specifies whether the current transaction will be automatically rolled back when an error occurs
+
+```sql
+SET XACT_ABORT {ON|OFF}
+
+--on = if there is an error, rollback the trans and aborts the execution
+--off = error, there can be an open trans
+```
+
+XACT_STATE
+
+0 → no open transaction
+
+1 → open and committable trans 
+
+-1 → open, uncomitt trans

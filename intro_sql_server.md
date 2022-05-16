@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -99,7 +97,10 @@ CASE WHEN x <30 THEN 1
 CAST
 
 ```sql
+
+--returns expression based on data_type
 CAST(expression AS data_type [(length)])
+
 ```
 
 Convert a value to an int datatype
@@ -329,6 +330,9 @@ DATEPART()
 --returns the numeric value of the part wanted
 SELECT DATEPART(YEAR,@dt) AS theYear;
 DATENAME()
+--DATENAME syntax
+DATENAME(datepart, date)
+--returns nvarchar
 --returns a string value
 SELECT DATENAME(MONTH,@dt) AS theMonth;
 ```
@@ -366,6 +370,11 @@ WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
 
 DATEPART
 
+```sql
+DATEPART(datepart, date)
+--returns int
+```
+
 determine what part of date you want to calculate
 
 DD: day
@@ -400,6 +409,7 @@ SELECT
 	DATEADD(HOUR, -3, DATEADD(DAY, -4, @SomeTime)) AS ...
 
 DATEDIFF()
+--returns an int; cant use datepart weekday value
 --obtain the difference bwt two datetime values, always returns a number, and rounds up
 DATEDIFF(datepart, startdate, endate
 SELECT DATEDIFF(DD, '2020-05-22', '2020-06-21')
@@ -567,7 +577,7 @@ Formatting Functions
 
 CAST()
 
-![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
+
 
 Dates
 
@@ -581,13 +591,17 @@ CONVERT()
 
 ```sql
 CONVERT(data_type [(length)], expression [,style])
+
+-- Group by the date portion of StartDate (a column)
+GROUP BY CONVERT(DATE, StartDate)
+-- Sort the results by the date portion of StartDate
+ORDER BY CONVERT(DATE, StartDate);
 ```
 
 Used to change data types to another
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
-![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
 
 Dates
 
@@ -601,7 +615,6 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
-![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
 
 PARSE()
 
@@ -621,7 +634,6 @@ DECLARE
 
 creating variable to avoid repeatability 
 
-![Screen Shot 2022-03-29 at 12.51.17 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30468c39-401e-4fc3-a464-d8830ca9222d/Screen_Shot_2022-03-29_at_12.51.17_PM.png)
 
 ```sql
 DECLARE @
@@ -636,8 +648,6 @@ DECLARE @my_artist VARCHAR(100)
 DECLARE @test_int INT
 SET @test_int = 5
 ```
-
-![Screen Shot 2022-03-29 at 1.08.54 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34aff8ae-68df-4477-a466-e26bfb543ea6/Screen_Shot_2022-03-29_at_1.08.54_PM.png)
 
 DELETE
 
@@ -924,13 +934,6 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
-
-![Screen Shot 2022-03-28 at 8.36.15 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5959b80b-0485-4498-ab98-5d644cff793c/Screen_Shot_2022-03-28_at_8.36.15_PM.png)
-
-RIGHT JOIN
-
-![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
-
 analytic function
 
 LAST_VALUE()
@@ -1310,8 +1313,6 @@ Temporary Tables
 
 using a # to create a temp table 
 
-![Screen Shot 2022-03-29 at 1.18.50 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1bf5af8c-0f6a-46f7-9766-043df6ff7b2e/Screen_Shot_2022-03-29_at_1.18.50_PM.png)
-
 THROW
 
 return an error caught by catch block
@@ -1355,6 +1356,44 @@ BEGIN TRAN;
 	UPDATE accounts SET current_balance=current_balance+100 WHERE account_id=5;
 	INSERT INTO transactions VALUES (5, 100, GETDATE());
 COMMIT TRAN;
+```
+
+Transaction isolation levels
+
+doing one trans at a time
+
+```sql
+SET TRANSACTION ISOLATION LEVEL
+	{READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE | SNAPSHORT
+```
+
+comparisons cons
+
+Read uncommitted: dirty reads, non-repeatable reads, phantom reads
+
+read committed: non-repeatable reads, phantom reads
+
+repeatable read: phantom reads
+
+serializable: none, you can get blocked and will need to wait for a new trans
+
+snapshots: none, modifications are stored in tempDB
+
+```sql
+ALTER DATABASE myDatabaseName SET ALLOW_SNAPSHOT_ISOLATION ON;
+```
+
+WITH (NOLOCK)
+
+similar to READ UNCOMMITTED. used to read uncommitted data
+
+applies to a specific table
+
+```sql
+SELECT *
+	-- Avoid being blocked
+	FROM transactions WITH (NOLOCK)
+WHERE account_id = 1
 ```
 
 WHERE
@@ -1716,17 +1755,29 @@ XACT_ABORT
 
 specifies whether the current transaction will be automatically rolled back when an error occurs
 
+can be used with throw and raiserror
+
 ```sql
 SET XACT_ABORT {ON|OFF}
 
 --on = if there is an error, rollback the trans and aborts the execution
---off = error, there can be an open trans
+--off = (default) error, there can be an open trans
 ```
 
 XACT_STATE
+
+checks if there is an open transaction
 
 0 → no open transaction
 
 1 → open and committable trans 
 
--1 → open, uncomitt trans
+-1 → open, uncomitt trans 
+
+```sql
+XACT_STATE()
+--takes no parameters
+--cant committ
+--cant rollback to a savepoint
+--can rollback the full transaction
+```

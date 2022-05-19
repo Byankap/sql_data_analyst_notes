@@ -263,6 +263,9 @@ roll up to the hour instead of day
 SELECT
 	DATEADD(HOUR,DATEDIFF(HOUR,0,SomeDate),0)AS SomeDate
 FROM...
+
+--first day of the current week
+SELECT DATEADD(week, DATEDIFF(week, 0, GETDATE()),0)
 ```
 
 Upsampling
@@ -577,7 +580,7 @@ Formatting Functions
 
 CAST()
 
-
+![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
 
 Dates
 
@@ -602,6 +605,7 @@ Used to change data types to another
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
+![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
 
 Dates
 
@@ -615,6 +619,7 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
+![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
 
 PARSE()
 
@@ -634,6 +639,7 @@ DECLARE
 
 creating variable to avoid repeatability 
 
+![Screen Shot 2022-03-29 at 12.51.17 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30468c39-401e-4fc3-a464-d8830ca9222d/Screen_Shot_2022-03-29_at_12.51.17_PM.png)
 
 ```sql
 DECLARE @
@@ -647,7 +653,19 @@ DECLARE @my_artist VARCHAR(100)
 --after the declare has been put, next step is SET to assigning the variable 
 DECLARE @test_int INT
 SET @test_int = 5
+
+-- Declare @Shifts as a TABLE
+DECLARE @Shifts table(
+    -- Create StartDateTime column
+	StartDateTime datetime,
+    -- Create EndDateTime column
+	EndDateTime datetime)
+-- Populate @Shifts
+INSERT INTO @Shifts (StartDateTime, EndDateTime)
+	SELECT '3/1/2018 8:00 AM', '3/1/2018 4:00 PM'
 ```
+
+![Screen Shot 2022-03-29 at 1.08.54 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34aff8ae-68df-4477-a466-e26bfb543ea6/Screen_Shot_2022-03-29_at_1.08.54_PM.png)
 
 DELETE
 
@@ -934,6 +952,13 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
+
+![Screen Shot 2022-03-28 at 8.36.15 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5959b80b-0485-4498-ab98-5d644cff793c/Screen_Shot_2022-03-28_at_8.36.15_PM.png)
+
+RIGHT JOIN
+
+![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
+
 analytic function
 
 LAST_VALUE()
@@ -1161,6 +1186,13 @@ SELECT TOP (5) PERCENT column
 
 --Return unique rows (if there are mulitple of one, it will only return one)
 SELECT DISTINCT column 
+--example
+-- Select the unique date values of StartDate and EndDate
+SELECT DISTINCT
+    -- Cast StartDate as date
+	CAST(StartDate as date),
+    -- Cast EndDate as date
+	CAST(EndDate as date)
 
 --Return all rows (not suitable for large tables)
 SELECT *
@@ -1312,6 +1344,8 @@ SELECT ISDATE(@date1) AS invalid_dmy;
 Temporary Tables
 
 using a # to create a temp table 
+
+![Screen Shot 2022-03-29 at 1.18.50 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1bf5af8c-0f6a-46f7-9766-043df6ff7b2e/Screen_Shot_2022-03-29_at_1.18.50_PM.png)
 
 THROW
 
@@ -1688,6 +1722,301 @@ WHERE condition1 AND condition2 AND ...;
 ```
 
 tip: dont forget the WHERE clause, otherwise it will update all the columns
+
+User defined functions
+
+routines that accept input parameters, perform action, return results
+
+Helps with execution time, network traffic and modular programming 
+
+```sql
+--Scaler function with no input parameters
+CREATE FUNCTION GetTomorrow()
+	RETURNS date AS BEGIN
+RETURN(SELECT DATEADD(day, 1, GETDATE()))
+END
+
+--executing a function
+SELECT dbo.GetTommorrow()
+--output a date
+-- dbo. is the schema where the function exist
+--a schema must be specified for execution
+
+--0r
+FROM dbo.SumLocationStats('00/00/0000')
+ORDER BY RideCount DESC
+--0utput three column of that yr
+--order by is not allow within the function itself
+
+--EXEC & Store results in variable
+DECLARE @TotalRideHrs AS numeric
+EXEC @TotalRideHrs = dbo.GetRideHrsOneDay @DateFarm = '00/00/0000'
+SELECT
+	'Total Ride Hours for 00/00/0000:',
+	@TotalRideHrs
+
+--declare parameter variable
+--set to oldest data
+--pass to function with select
+DECLARE @DateParm as date = 
+(SELECT TOP 1 CONVERT(date, PickupDate)
+	FROM YellowTripData
+	ORDER BY PickupDate DESC)
+SELECT @DateParm, dbo.GetRideHrsOneDay(@DateParm)
+--output 0000-00-00 75987(riding hrs)
+
+--example
+-- Create SumRideHrsSingleDay
+CREATE FUNCTION SumRideHrsSingleDay (@DateParm date)
+-- Specify return data type
+RETURNS numeric
+AS
+-- Begin
+BEGIN
+RETURN
+-- Add the difference between StartDate and EndDate
+(SELECT SUM(DATEDIFF(second, StartDate, EndDate))/3600
+FROM CapitalBikeShare
+ -- Only include transactions where StartDate = @DateParm
+WHERE CAST(StartDate AS date) = @DateParm)
+-- End
+END
+
+--execute TVF into a variable
+-- Create @StationStats
+DECLARE @StationStats TABLE(
+	StartStation nvarchar(100), 
+	RideCount int, 
+	TotalDuration numeric)
+-- Populate @StationStats with the results of the function
+INSERT INTO @StationStats
+SELECT TOP 10 *
+-- Execute SumStationStats with 3/15/2018
+FROM dbo.SumStationStats('3/15/2018') 
+ORDER BY RideCount DESC
+-- Select all the records from @StationStats
+SELECT * 
+FROM @StationStats
+```
+
+CRUD
+
+```sql
+--C for create
+CREATE PROCEDURE dbo.abcCreate(
+	@word as date,
+	@word2 as numeric( 18,0)
+) AS BEGIN INSERT INTO dbo.TripSummary(Date, TripHours)
+VALUES
+	(@tripDate, @tripHours)
+SELECT Date, TripHours
+FROM dbo.TripSummary
+WHERE date= @tripDate END
+
+--R for read
+CREATE PROCEDURE abcRead
+	(@tripDate as date)
+AS
+BEgin
+SELECT Date, TripHours
+FROM TripSummary
+WHERE Date = @tripDate
+END;
+
+--U for Update
+CREATE PROCEDURE dbo.abcUpdate
+	(@tripDate as date,
+	@TripHours as numeric(18, 0))
+AS 
+BEGIN
+UPDATE dbo.TripSummary
+SET Date = @TripDate,
+	TripHours = @TripHours
+WHERE date = @tripDate
+END;
+
+--D for Delete
+CREATE PROCEDURE dbo.abcDelete
+	(@tripDate as date,
+	@TripHours int OUTPUT)
+AS 
+BEGIN
+DELETE 
+FROM
+WHERE date = @tripDate
+SET @TripHours= @...
+END;
+
+```
+
+Executing
+
+no output parameter or return value
+
+```sql
+EXEC dbo.cusp_TripSummaryUpdate
+	@TripDate = '00/00/0000'
+	@TripHours = '300'
+```
+
+output parameter
+
+```sql
+--local variable is created to store the output vallue
+Declare @RideHrs as numeric (18,0)
+EXEC dbo.cuspSumRideHrsOneDay
+	@TripDate = '00/00/0000',
+	@TripHoursOut = @TripHours OUTPUT
+```
+
+return value
+
+```sql
+Declare @RideHrs as numeric (18,0)
+EXEC @RideHrs = 
+	dbo.cusp_tripSummaryUpdate
+	@TripDate = '00/00/0000',
+	@TripHoursOut = 300
+SELECT @RideHrs as RideHours
+
+--return value and output
+Declare @RideHrs as int
+Declare @RowCount as int
+
+EXEC @RideHrs = 
+	dbo.cusp_tripSummaryUpdate
+	@TripDate = '00/00/0000',
+	@TripHoursOut = @RowCount OUTPUT
+
+SELECT @RideHrs as RideHours,
+	@RowCount as RowCount
+
+```
+
+EXEC & store result set 
+
+```sql
+DECLARE @tripSummaryResultSet as Table(
+	TripDate date,
+	TripHours numeric(18,0))
+INSERT INTO @tripSummaryResultSet
+EXEC cusp_TripSummaryRead @TripDate = '00/00/0000'
+```
+
+Error Handling
+
+```sql
+--example
+--lets try to change the data type to nvarchar(30)
+ALTER PROCEDURE dbo.cusp_TripSummaryCreate
+	@TripDate nvarchar(30),
+	@RideHurs numeric,
+--output parameter
+@ErrorMsg nvarchar(max)=null OUTPUT
+AS 
+BEGIN
+	BEGIN TRY
+--where there should be an error
+		INSERT INTO TripSummary (Date, TripHours)
+		Values (@TripDate, @RideHrs)
+END TRY
+BEGIN CATCH
+	SET @ErrorMsg = 'Error_Num: ' +
+	CAST (ERROR_NUMBER() AS varchar) +
+	'Error_Sev:' +
+	CAST(ERROR_SEVERITY() AS varchar)+
+	'Error_Sev:' + ERROR_MESSAGE()
+END CATCH
+END
+```
+
+Inline table valued functions
+
+```sql
+CREATE FUNCTION name(
+	@startDate AS datetime = '0/0/0000'
+)RETURNS TABLE AS RETURN 
+SELECT
+	column1 AS name,
+	COUNT(column2) AS name,
+	SUM(column3) as name
+FROM table
+WHERE CAST(column4 AS date) = @startDate
+GROUP BY column1
+```
+
+MSTVF(multiple statement)
+
+```sql
+CREATE FUNCTION name(
+	@startDate AS datetime = '0/0/0000'
+	@endDate ...
+)RETURNS @TripCountAvgFare TABLE (
+	DropOffDate date, TripCount int, AvgFare numeric
+) AS BEGIN INSERT INTO @TripCountAvgFare
+SELECT 
+	CAST(DropOffDate as date),
+	COUNT(ID),
+	AVG(fareAmount) AS name
+FROM table
+WHERE 
+	DATEPART(month, DROPOFFDATE) = @month
+	AND DATEPART(year, DROPOFFDATE) = @year
+GROUP BY CAST(DropoffDate as date)
+RETURN END;
+```
+
+Maintaining /changing functions
+
+```sql
+ALTER FUNCTION 
+--cannot change inline to MSTVF
+--in order to do that, need to 
+DROP FUNCTION dbo.functionName
+--then after use 
+CREATE FUNCTION 
+
+CREATE OR ALTER FUNCTION
+```
+
+Schemabinding
+
+specifies schema is bound to database objects that it references
+
+prevents changes to the schema if schema bound objects are referencing it
+
+```sql
+CREATE OR ALTER FUNCTION dbo.GetRideHrsOneDay(@DateParm date)
+RETURNS numeric WITH SCHEMABINDING
+AS
+BEGIN
+RETURN...
+```
+
+Stored Procedure
+
+```sql
+--creating procedure with OUTPUT parameter
+--first four lines of code
+--SP name must be unique
+CREATE PROCEDURE dbo.cuspGetRideHrsOneDay
+	--declare the input parameter	
+	@DateParm date,
+	--declare output parameter
+	@RideHrsOut numeric OUTPUT
+AS
+-- Don't send the row count 
+SET NOCOUNT ON
+BEGIN
+-- Assign the query result to @RideHrsOut
+SELECT
+	@RideHrsOut = SUM(DATEDIFF(second, StartDate, EndDate))/3600
+FROM CapitalBikeShare
+-- Cast StartDate as date and compare with @DateParm
+WHERE CAST(StartDate AS date) = @DateParm
+RETURN
+END
+```
 
 View
 

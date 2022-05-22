@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -142,6 +144,69 @@ FROM voters
 WHERE CHARINDEX('dan', first_name) > 0 
     -- Look for last_names that do not contain the letter "z"
 	AND CHARINDEX('z', last_name) = 0;
+```
+
+Cleaning Data
+
+Data imputation(replacing 0 for example)
+
+-mean
+
+it can increase correlation among other columns
+
+```sql
+CREATE PROCEDURE dbo.ImputDurMean
+AS 
+BEGIN
+DECLARE @AvgTripDuration AS float
+
+SELECT @AvgTripDuration = AVG(Duration)
+FROM CapitalBikeShare
+WHERE Duration > 0
+
+UPDATE CapitalBikeShare
+SET Duration = @AvgTripDuration
+WHERE Duration = 0
+END; 
+```
+
+-hot Deck (picking it a random value from the data set)
+
+```sql
+CREATE FUNCTION dbo.GetDurHotDeck()
+RETURNS decimal (18,4)
+AS BEGIN
+RETURN(SELECT TOP 1 Duration
+FROM CapitalBikeShare
+TABLESAMPLE (1000 rows)
+WHERE Duration > 0)
+END
+--creating a function every time a 0 is found
+SELECT
+	StartDate,
+	'TripDuration' = CASE WHEN Duration >0 THEN Duration
+		ELSE dbo.GetDurHotDeck() END
+FROM CaptialBikShare;
+```
+
+-omission
+
+Things to consider
+
+-data size
+
+-end goal 
+
+-data distribution 
+
+```sql
+SELECT
+	DATENAME(weekday, StartDate) AS DayofWeek,
+	AVG(Duration) AS 'AvgDuration'
+FROM CapitalBikeShare
+WHERE Duration>0
+GROUP BY DATENAME(weekday,StartDate)
+ORDER BY AVG(Duration)DESC
 ```
 
 CREATE TABLE
@@ -580,8 +645,6 @@ Formatting Functions
 
 CAST()
 
-![Screen Shot 2022-04-15 at 12.59.06 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee96f08c-ea9c-4fe7-894d-6cea6b6960d4/Screen_Shot_2022-04-15_at_12.59.06_PM.png)
-
 Dates
 
 ```sql
@@ -605,7 +668,6 @@ Used to change data types to another
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
-![Screen Shot 2022-04-15 at 1.04.28 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be2a5363-22bf-4617-b439-095b2e497212/Screen_Shot_2022-04-15_at_1.04.28_PM.png)
 
 Dates
 
@@ -619,7 +681,6 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
-![Screen Shot 2022-04-15 at 1.07.45 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1727d5ff-fa62-486b-a1fd-076105208ea0/Screen_Shot_2022-04-15_at_1.07.45_PM.png)
 
 PARSE()
 
@@ -639,7 +700,6 @@ DECLARE
 
 creating variable to avoid repeatability 
 
-![Screen Shot 2022-03-29 at 12.51.17 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30468c39-401e-4fc3-a464-d8830ca9222d/Screen_Shot_2022-03-29_at_12.51.17_PM.png)
 
 ```sql
 DECLARE @
@@ -665,7 +725,6 @@ INSERT INTO @Shifts (StartDateTime, EndDateTime)
 	SELECT '3/1/2018 8:00 AM', '3/1/2018 4:00 PM'
 ```
 
-![Screen Shot 2022-03-29 at 1.08.54 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34aff8ae-68df-4477-a466-e26bfb543ea6/Screen_Shot_2022-03-29_at_1.08.54_PM.png)
 
 DELETE
 
@@ -952,12 +1011,6 @@ SELECT
 FROM Admitted
 LEFT JOIN Discharged ON Discharged.Patient_ID = Admitted.Patient_ID;
 ```
-
-![Screen Shot 2022-03-28 at 8.36.15 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5959b80b-0485-4498-ab98-5d644cff793c/Screen_Shot_2022-03-28_at_8.36.15_PM.png)
-
-RIGHT JOIN
-
-![Screen Shot 2022-03-28 at 8.42.21 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/391b83c9-95f0-49b7-a350-4f89ef440cd7/Screen_Shot_2022-03-28_at_8.42.21_PM.png)
 
 analytic function
 
@@ -1345,7 +1398,6 @@ Temporary Tables
 
 using a # to create a temp table 
 
-![Screen Shot 2022-03-29 at 1.18.50 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1bf5af8c-0f6a-46f7-9766-043df6ff7b2e/Screen_Shot_2022-03-29_at_1.18.50_PM.png)
 
 THROW
 
@@ -1799,6 +1851,52 @@ SELECT *
 FROM @StationStats
 ```
 
+Conversion UDFs
+
+```sql
+
+--Function example 1
+CREATE FUNCTION dbo.ConvertMileToMeter(@miles numeric)
+RETURNS numeric
+AS
+BEGIN
+RETURN (SELECT @miles * 1609.34)
+END
+
+--Function example 2
+CREATE FUNCTION dbo.ConvertCurrency(@Currency numeric, @Exchange numeric)
+RETURNS numeric
+AS
+BEGIN
+RETURN (SELECT @ExhangeRate * @Currency)
+END
+
+--change function to not round
+ALTER FUNCTION dbo.ConvertMileToMeter(
+	@miles numeric(18,2)
+) RETURNS numeric(18,2) as BEGIN RETURN(
+	SELECT @miles * 1609)
+) END;
+
+--using Function 1, 2
+SELECT TripDistance as 'MileDistance',
+dbo.ConvertMileToMeter(TripDistance) as MeterDistance
+FareAmount a
+--output 4columns( FareUSD FareGBP)
+
+--Creating a Shift function
+CREATE FUNCTION dbo.GetShift(@Hour int)
+RETURNS int
+AS
+BEGIN
+RETURN(CASE
+	WHEN @Hour >= 0 AND @Hour <9 THEN 1
+	WHEN @Hour >= 9 AND @Hour <18 THEN 2
+	WHEN @Hour >= 18 AND @Hour <24 THEN 3
+END)
+END;
+```
+
 CRUD
 
 ```sql
@@ -2101,12 +2199,4 @@ checks if there is an open transaction
 
 1 → open and committable trans 
 
--1 → open, uncomitt trans 
-
-```sql
-XACT_STATE()
---takes no parameters
---cant committ
---cant rollback to a savepoint
---can rollback the full transaction
-```
+-1 → open, uncomitt trans

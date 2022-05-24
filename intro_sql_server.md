@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -83,6 +81,10 @@ END
 
 SELECT 
     SUM(CASE WHEN name = 'unnamed' THEN 1 else 0 END) AS NAME_COUNT,
+
+ORDER BY
+	CASE WHEN DATENAME(WEEKDAY, StartDate) = 'Sunday' THEN 1
+END
 ```
 
 Binning into groups
@@ -645,6 +647,7 @@ Formatting Functions
 
 CAST()
 
+
 Dates
 
 ```sql
@@ -681,6 +684,19 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
+
+FORMAT w/ CAST
+
+```sql
+--3/9/2019
+SELECT TOP 5
+FORMAT(CAST(StartDate as Date), 'd', 'en-us')
+AS 'US Date',
+--1,444,777.00
+FORMAT(SUM(DURATION), 'n', 'en-us)
+--or
+FORMAT(SUM(DURATION), '#,0.00')
+```
 
 PARSE()
 
@@ -1482,6 +1498,51 @@ SELECT *
 WHERE account_id = 1
 ```
 
+Triggers
+
+type of stored procedure that activated when an event occurs in the database server
+
+types
+
+data manipulation language triggers
+
+INSERT, UPDATE, DELETE
+
+Data definition language triggers
+
+CREATE, ALTER, DROP
+
+Logon triggers
+
+LOGON events
+
+```sql
+--create a trigger
+CREATE TRIGGER NameofTrigger
+--linking it to an existing object/table
+ON TableName
+--Trigger behavior type
+--this example is of insert
+AFTER INSERT
+-- or the following to prevent deletions
+INSTEAD OF DELETE
+--the begin of trigger workflow
+AS
+--the action executed by trigger
+PRINT('Message.');
+
+--using trigger as a computed column
+CREATE TRIGGER [CalcTotalAmount]
+ON [SalesWithoutPrice]
+AFTER INSERT
+AS
+	UPDATE [sp]
+	SET [sp].[TotalAmount]=[sp].[Quantity]*[p].[Price]
+	FROM [SalesWithoutPrice] AS [sp]
+	INNER JOIN [Products] AS [p] ON [sp].Product = [p].[Product]
+	WHERE [sp].[TotalAmount] IS NULL;
+```
+
 WHERE
 
 return rows that met a certain criteria
@@ -2114,6 +2175,29 @@ FROM CapitalBikeShare
 WHERE CAST(StartDate AS date) = @DateParm
 RETURN
 END
+
+--creating a table and using the stored proceudre 
+-- Create SPResults
+DECLARE @SPResults TABLE(
+  	-- Create Weekday
+	Weekday 		nvarchar(30),
+    -- Create Borough
+	Borough 		nvarchar(30),
+    -- Create AvgFarePerKM
+	AvgFarePerKM 	nvarchar(30),
+    -- Create RideCount
+	RideCount		nvarchar(30),
+    -- Create TotalRideMin
+	TotalRideMin	nvarchar(30))
+
+-- Insert the results into @SPResults
+INSERT INTO @SPResults
+-- Execute the SP
+EXEC dbo.cuspBoroughRideStats
+
+-- Select all the records from @SPresults 
+SELECT * 
+FROM @SPResults;
 ```
 
 View
@@ -2199,4 +2283,12 @@ checks if there is an open transaction
 
 1 → open and committable trans 
 
--1 → open, uncomitt trans
+-1 → open, uncomitt trans 
+
+```sql
+XACT_STATE()
+--takes no parameters
+--cant committ
+--cant rollback to a savepoint
+--can rollback the full transaction
+```

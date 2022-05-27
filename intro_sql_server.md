@@ -671,7 +671,6 @@ Used to change data types to another
 
 like CAST but there is more control over formatting from dates to strings with using an optional style(its the third parameter)
 
-
 Dates
 
 ```sql
@@ -716,7 +715,6 @@ DECLARE
 
 creating variable to avoid repeatability 
 
-
 ```sql
 DECLARE @
 
@@ -740,7 +738,6 @@ DECLARE @Shifts table(
 INSERT INTO @Shifts (StartDateTime, EndDateTime)
 	SELECT '3/1/2018 8:00 AM', '3/1/2018 4:00 PM'
 ```
-
 
 DELETE
 
@@ -1135,6 +1132,10 @@ comes after GROUP BY
 
 used for non-measure attribute hierarchal data, by taking the combo of each column follow by each matching value 
 
+REVERT
+
+Switches the execution context back to the caller of the last EXECUTE AS statement.
+
 ROUND
 
 either side of the decimal 
@@ -1508,9 +1509,21 @@ data manipulation language triggers
 
 INSERT, UPDATE, DELETE
 
+used with AFTER or INSTEAD OF
+
+attached to tables or view
+
+inserted and deleted special tables
+
 Data definition language triggers
 
 CREATE, ALTER, DROP
+
+only used with AFTER
+
+attached to databases or servers
+
+no special tables
 
 Logon triggers
 
@@ -1542,6 +1555,66 @@ AS
 	INNER JOIN [Products] AS [p] ON [sp].Product = [p].[Product]
 	WHERE [sp].[TotalAmount] IS NULL;
 ```
+
+```sql
+--DDL trigger
+CREATE TRIGGER TrackDatabaseTable
+ON Database
+--FOR is a synonym of AFTER and performs the trigger's set of actions after the triggering event finishes.
+FOR Create_Table,
+		ALTER_TABLE,
+		DROP_TABLE
+		
+AS 
+	INSERT INTO TablesChangeLog(EventData, ChangedBy)
+	VALUES (EVENTDATA(), USER);
+```
+
+```sql
+--logon triggers
+CREATE TRIGGER LogonAudit
+--attached at the server level
+--sa account for security purposes
+ON ALL SERVER WITH EXECUTE AS 'sa'
+FOR LOGON
+AS
+	INSERT INTO ServerLogonLog
+							(loginName, loginDate, SessionID, SourceIPAddress)
+	SELECT ORIGINAL_LOGIN(), GETDATE(), @SPID, client_net_address
+	FROM SYS.DM_EXEC_CONNECTIONS
+	WHERE session_id = @SPID;
+```
+
+Finding server-level triggers
+
+```sql
+--Finding server-level triggers
+SELECT*FROM sys.server_triggers;
+
+--finding database and table triggers
+SELECT*FROM sys.triggers;
+```
+
+Viewing trigger definition
+
+```sql
+SELECT definition
+FROM sys.sql_modules
+WHERE object_id = OBJECT_ID('PreventOrdersUpdate');
+--output you get the create trigger query 
+--or
+SELECT OBJECT_DEFINITION (OBJECT_ID('PreventOrdersUpdate'));
+--or
+EXECUTE sp_helptext @objname='PreventOrdersUpdate';
+```
+
+TIPS for best practice
+
+-well documented database design
+
+-simple logic in trigger design
+
+-avoid overusing triggers
 
 WHERE
 

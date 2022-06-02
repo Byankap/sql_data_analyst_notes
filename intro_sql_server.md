@@ -1,3 +1,5 @@
+# SQL Server Syntax
+
 Created by Microsoft
 
 ALTER TABLE
@@ -714,6 +716,7 @@ SELECT
 DECLARE
 
 creating variable to avoid repeatability 
+
 
 ```sql
 DECLARE @
@@ -1568,6 +1571,19 @@ FOR Create_Table,
 AS 
 	INSERT INTO TablesChangeLog(EventData, ChangedBy)
 	VALUES (EVENTDATA(), USER);
+
+--DDL tigger capabilities
+--database level
+CREATE_TABLE, ALTER_TABLE,DROP_TABLE
+CREATE_VIEW,ALTER_VIEW,DROP_VIEW
+CRATE_INDEX,....
+ADD_ROLE_MEMBER,DROP_ROLE_MEMBER
+CREATE_STATISTICS,DROP_STATISTICS
+
+--server level
+CREATE_DATABASE, ALTER_DATABASE, DROP_DATABASE
+GRANT_SERVER, DENY_SERVER, REVOKE_SERVER
+CREATE_CREDENTIAL, ALTER_CREDENTIAL, DROP_CREDENTIAL
 ```
 
 ```sql
@@ -1585,7 +1601,35 @@ AS
 	WHERE session_id = @SPID;
 ```
 
+Deleting and Altering triggers
+
+```sql
+--deleting a trigger
+DROP TRIGGER TriggerName;
+--database
+DROP TRIGGER TriggerName;
+ON Database;
+--server level
+DROP TRIGGER TriggerName;
+ON ALL SERVER;
+
+--disabling 
+DISABLE TRIGGER triggerName
+ON Table;
+--enabling 
+ENABLE TRIGGER triggerName
+ON Table;
+
+--updating triggers
+ALTER TRIGGER
+--or
+DROP TRIGGER triggerName
+CREATE TRIGGER--rewrite trigger again
+```
+
 Finding server-level triggers
+
+SQL Server provides information about the execution of any triggers that are currently stored in memory in the `sys.dm_exec_trigger_stats`
 
 ```sql
 --Finding server-level triggers
@@ -1593,6 +1637,7 @@ SELECT*FROM sys.server_triggers;
 
 --finding database and table triggers
 SELECT*FROM sys.triggers;
+
 ```
 
 Viewing trigger definition
@@ -1615,6 +1660,35 @@ TIPS for best practice
 -simple logic in trigger design
 
 -avoid overusing triggers
+
+real case example
+
+adding a modify date when there is a change to customers table
+
+```sql
+	CREATE TRIGGER CopyCustomersToHistory
+--select the table where info is from, where the change occured
+ON Customers
+--the change is inserted into CopyCustomersToHistory
+AFTER INSERT, UPDATE
+AS
+	INSERT INTO CustomerHistory (Customer, ContractID, Address, PhoneNo)
+	SELECT Customer, ContractID, Address, PhoneNo, GETDATE()
+	FROM inserted;
+
+```
+
+creating notification triggers
+
+```sql
+CREATE TRIGGER NewOrderNotification
+ON Orders
+AFTER INSERT
+AS
+	EXECUTE SendNotifiation @RecipientEmail = "email address"
+						,@EmailSubject = "Subject"
+						, @EmailBody = "Message.";
+```
 
 WHERE
 
@@ -2356,12 +2430,4 @@ checks if there is an open transaction
 
 1 → open and committable trans 
 
--1 → open, uncomitt trans 
-
-```sql
-XACT_STATE()
---takes no parameters
---cant committ
---cant rollback to a savepoint
---can rollback the full transaction
-```
+-1 → open, uncomitt trans

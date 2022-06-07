@@ -1,5 +1,3 @@
-# SQL Server Syntax
-
 Created by Microsoft
 
 ALTER TABLE
@@ -555,6 +553,25 @@ FROM sys.time_zone_info tzi
 	WHERE tzi.name LIKE '%Time Zone%';
 ```
 
+Duplicate Row Managment 
+
+```sql
+--Distinct
+SELECT DISTINCT (PlayerName)
+FROM table;
+
+SELECT PlayerName
+FROM table
+GROUP BY PlayerName;
+
+SELECT PlayerName,
+	COUNT(TEAM) AS TeamsPlayedFor
+FROM table
+GROUP BY PlayerName;
+
+--Remove Duplicate with UNION
+```
+
 Error-handling 
 
 -safe versions
@@ -649,7 +666,6 @@ Formatting Functions
 
 CAST()
 
-
 Dates
 
 ```sql
@@ -685,7 +701,6 @@ FORMAT()
 
 more flexible then the two above but slower (around 50,000 rows)
 
-
 FORMAT w/ CAST
 
 ```sql
@@ -717,7 +732,6 @@ DECLARE
 
 creating variable to avoid repeatability 
 
-
 ```sql
 DECLARE @
 
@@ -740,8 +754,7 @@ DECLARE @Shifts table(
 -- Populate @Shifts
 INSERT INTO @Shifts (StartDateTime, EndDateTime)
 	SELECT '3/1/2018 8:00 AM', '3/1/2018 4:00 PM'
-```
-
+`
 DELETE
 
 tip: there will not be a confirmation, it will happen immediately 
@@ -775,6 +788,8 @@ JOIN(SELECT AVG(Age) AS AverageAge
 FROM kidney) b
 ON a.Age = b.AverageAge
 ```
+
+EXISTS
 
 analytic function
 
@@ -858,6 +873,12 @@ HAVING
 
 appear after the GROUP BY clause and filters on groups or aggregates
 
+AGgregating by group. Use WHERE for individual rows and HAVING for numeric filter on grouped rows
+
+Dont use HAVING to filter individual or ungrouped rows —inefficient 
+
+HAVING can only be applied to a numeric column in an aggregate function filter
+
 Horizontal Partitioning
 
 splitting tables into subcategories by splitting the rows.
@@ -918,6 +939,35 @@ FROM...
 ```
 
 tip: dont use SELECT *, be specific  in case table structure changes 
+
+Indexes
+
+Clustered index
+
+nonclustered
+
+![0A0B1885-4A46-4529-A034-834572EBAD33_4_5005_c.jpeg](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/28742515-6529-4c3f-b1bb-d90971443cfb/0A0B1885-4A46-4529-A034-834572EBAD33_4_5005_c.jpeg)
+
+INTERSECT
+
+—THis example, includes how many clients ordered somthing
+
+```sql
+--ordered products
+SELECT customer
+FROM customers
+INTERSECT
+SELECT customer
+FROM orders
+
+--didnot order products
+SELECT customer
+FROM customers
+EXCEPT
+SELECT customer
+FROM orders
+```
+```
 
 ISDATE(expression)
 
@@ -1117,6 +1167,19 @@ WHERE LEN(first_name) < 5
 
 ```
 
+Processing Order
+
+1. From
+2. On
+3. Join
+4. Where
+5. Group By
+6. Having
+7. Select
+8. Distinct
+9. Order By
+10. Top
+
 RAISERROR 
 
 it is recommended to use THROW instead
@@ -1256,6 +1319,9 @@ SELECT TOP (5) column
 
 --Return top 5% of rows
 SELECT TOP (5) PERCENT column
+
+SELECT TOP 25 PERCENT 
+-- Limit rows to the upper quartile
 
 --Return unique rows (if there are mulitple of one, it will only return one)
 SELECT DISTINCT column 
@@ -1414,10 +1480,38 @@ SET DATEFORMAT dmy;
 SELECT ISDATE(@date1) AS invalid_dmy;
 ```
 
+Sub-Query
+
+```sql
+--used with FROM
+SELECT col1, col2, col3
+--this subquery calculated a new column 
+FROM
+	(SELECT*,
+	DATEDIFF(DAY,col4,col5) AS Name
+	FROM table) AS o
+WHERE col3 = 35;
+
+--used with WHERE
+SELECT..
+FROM..
+WHERE CustomerID
+	IN(SELECT CustomerID
+		FROM Orders
+		WHERE col3>800);
+
+--used with SELECT
+SELECT CustomerID,
+	Company,
+	(SELECT AVG(Freight)
+	FROM Orders o
+	WHERE c.CustomerID = o.CustomerID) AS AvgFreight
+FROM..
+```
+
 Temporary Tables
 
 using a # to create a temp table 
-
 
 THROW
 
@@ -1695,6 +1789,16 @@ WHERE
 return rows that met a certain criteria
 
 can filter ‘text’, numbers, ‘dates’ (year-month-day)
+
+Calculations in WHERE filter condition, but can increase query time
+
+```sql
+SELECT col1,
+	col2,
+	(col3 + col4) AS Total
+FROM table
+WHERE (col3 + col4) >= 1000
+```
 
 ```sql
 --first three customers with invoice of >15
@@ -2430,4 +2534,12 @@ checks if there is an open transaction
 
 1 → open and committable trans 
 
--1 → open, uncomitt trans
+-1 → open, uncomitt trans 
+
+```sql
+XACT_STATE()
+--takes no parameters
+--cant committ
+--cant rollback to a savepoint
+--can rollback the full transaction
+```
